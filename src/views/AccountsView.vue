@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAccountsStore } from '@/stores/accounts'
+import AccountsTable from '@/components/accounts/AccountsTable.vue'
 
 const accountsStore = useAccountsStore()
 
@@ -10,6 +11,10 @@ onMounted(() => {
 
 const handleAddAccount = () => {
   accountsStore.addAccount()
+}
+
+const handleDeleteAccount = (id: string) => {
+  console.log('Delete account:', id)
 }
 </script>
 
@@ -23,11 +28,21 @@ const handleAddAccount = () => {
         </div>
       </template>
 
-      <el-empty description="Accounts table" />
+      <el-alert
+      title="Для указания нескольких меток для одной пары логин/пароль используйте разделитель ;"
+      type="info"
+      :closable="false"
+      show-icon
+      class="mb-4"
+      />
+
+      <AccountsTable
+      :accounts="accountsStore.accounts"
+      @delete-account="handleDeleteAccount"
+      />
     </el-card>
   </div>
 </template>
-
 
 <style scoped>
 .accounts-container {
@@ -40,5 +55,9 @@ const handleAddAccount = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
 }
 </style>
