@@ -14,7 +14,7 @@ const handleAddAccount = () => {
 }
 
 const handleDeleteAccount = (id: string) => {
-  console.log('Delete account:', id)
+  accountsStore.deleteAccount(id)
 }
 </script>
 
