@@ -46,11 +46,20 @@ export const useAccountsStore = defineStore('accounts', () => {
         console.log(`Удален аккаунт ${id}. Всего: ${accounts.value.length}`)
         }
     }
+    const updateAccount = (id: string, updates: Partial<AccountRecord>) => {
+        const account = accounts.value.find(acc => acc.id === id)
+        if (account) {
+            Object.assign(account, updates)
+            saveToStorage()
+            console.log(`Обновлен аккаунт ${id}`)
+        }
+    }
 
     return {
         accounts,
         loadFromStorage,
         addAccount,
-        deleteAccount
+        deleteAccount,
+        updateAccount
     }
 })

@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useAccountsStore } from '@/stores/accounts'
 import AccountsTable from '@/components/accounts/AccountsTable.vue'
+import type { RecordType } from '@/types'
 
 const accountsStore = useAccountsStore()
 
@@ -16,6 +17,26 @@ const handleAddAccount = () => {
 const handleDeleteAccount = (id: string) => {
   accountsStore.deleteAccount(id)
 }
+
+const handleFieldUpdate = (accountId: string, field: string, value: string | null) => {
+  accountsStore.updateAccount(accountId, { [field]: value })
+}
+
+const handleRecordTypeUpdate = (accountId: string, recordType: RecordType) => {
+  const account = accountsStore.accounts.find(acc => acc.id === accountId)
+  if (account) {
+    const updates: { recordType: RecordType; password?: string | null } = { recordType }
+
+    if (recordType === 'LDAP') {
+      updates.password = null
+    } else if (account.password === null) {
+      updates.password = ''
+    }
+
+    accountsStore.updateAccount(accountId, updates)
+  }
+}
+
 </script>
 
 <template>
@@ -29,19 +50,22 @@ const handleDeleteAccount = (id: string) => {
       </template>
 
       <el-alert
-      title="Для указания нескольких меток для одной пары логин/пароль используйте разделитель ;"
-      type="info"
-      :closable="false"
-      show-icon
-      class="mb-4"
+          title="Для указания нескольких меток для одной пары логин/пароль используйте разделитель ;"
+          type="info"
+          :closable="false"
+          show-icon
+          class="mb-4"
       />
 
       <AccountsTable
-      :accounts="accountsStore.accounts"
-      @delete-account="handleDeleteAccount"
+          :accounts="accountsStore.accounts"
+          @delete-account="handleDeleteAccount"
+          @update-field="handleFieldUpdate"
+          @update-record-type="handleRecordTypeUpdate"
       />
     </el-card>
   </div>
+
 </template>
 
 <style scoped>
