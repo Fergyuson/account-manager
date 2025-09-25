@@ -36,7 +36,6 @@ const onBlur = () => {
       @update:model-value="$emit('update:modelValue', $event)"
       placeholder="XXX"
       :maxlength="maxlength"
-      show-word-limit
       :class="{ 'is-error': error }"
       @input="onInput"
       @blur="onBlur"

@@ -23,6 +23,28 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+
+const cellSpanMethod = ({ row, columnIndex }: any) => {
+  if (columnIndex === 2 && row.recordType === 'LDAP') {
+    return {
+    rowspan: 1,
+    colspan: 2
+    }
+  }
+
+  if (columnIndex === 3 && row.recordType === 'LDAP') {
+    return {
+    rowspan: 0,
+    colspan: 0
+    }
+  }
+
+  return {
+  rowspan: 1,
+  colspan: 1
+  }
+}
+
 const deleteAccount = (id: string) => {
   emit('delete-account', id)
 }
@@ -58,17 +80,19 @@ const onPasswordBlur = (account: AccountRecord) => {
 
 <template>
   <el-table
-      :data="accounts"
-      empty-text="Нет учетных записей. Нажмите кнопку '+' для добавления новой записи."
-      class="accounts-table"
+   :data="accounts"
+   :span-method="cellSpanMethod"
+   empty-text="Нет учетных записей. Нажмите кнопку '+' для добавления новой записи."
+   class="accounts-table"
   >
+
     <el-table-column label="Метка" min-width="150">
       <template #default="{ row }">
         <LabelTags
-            v-model="row.label"
-            :error="row.errors.label"
-            @input="onLabelInput(row)"
-            @blur="onLabelBlur(row)"
+         v-model="row.label"
+         :error="row.errors.label"
+         @input="onLabelInput(row)"
+         @blur="onLabelBlur(row)"
         />
       </template>
     </el-table-column>
@@ -76,34 +100,40 @@ const onPasswordBlur = (account: AccountRecord) => {
     <el-table-column label="Тип записи" width="160">
       <template #default="{ row }">
         <AccountTypeSelect
-            v-model="row.recordType"
-            @change="onRecordTypeChange(row)"
+         v-model="row.recordType"
+         @change="onRecordTypeChange(row)"
         />
       </template>
     </el-table-column>
 
-    <el-table-column label="Логин" min-width="150">
+    <el-table-column
+     label="Логин"
+     min-width="150"
+    >
       <template #default="{ row }">
         <el-input
-            v-model="row.login"
-            placeholder="Значение"
-            maxlength="100"
-            show-word-limit
-            :class="{ 'is-error': row.errors.login }"
-            @input="onLoginInput(row)"
-            @blur="onLoginBlur(row)"
+         v-model="row.login"
+         placeholder="Значение"
+         maxlength="100"
+         how-word-limit
+         :class="{ 'is-error': row.errors.login }"
+         @input="onLoginInput(row)"
+         @blur="onLoginBlur(row)"
         />
       </template>
     </el-table-column>
 
-    <el-table-column label="Пароль" min-width="150">
+    <el-table-column
+        label="Пароль"
+        min-width="150"
+    >
       <template #default="{ row }">
         <PasswordField
-            v-model="row.password"
-            :record-type="row.recordType"
-            :error="row.errors.password"
-            @input="onPasswordInput(row)"
-            @blur="onPasswordBlur(row)"
+         v-model="row.password"
+         :record-type="row.recordType"
+         :error="row.errors.password"
+         @input="onPasswordInput(row)"
+         @blur="onPasswordBlur(row)"
         />
       </template>
     </el-table-column>
@@ -111,11 +141,11 @@ const onPasswordBlur = (account: AccountRecord) => {
     <el-table-column label="Действия" width="100" align="center">
       <template #default="{ row }">
         <el-button
-            type="danger"
-            :icon="Delete"
-            size="small"
-            circle
-            @click="deleteAccount(row.id)"
+         type="danger"
+         :icon="Delete"
+         size="small"
+         circle
+         @click="deleteAccount(row.id)"
         />
       </template>
     </el-table-column>

@@ -34,10 +34,10 @@ const debugData = computed(() => {
         <div class="card-header">
           <h1>Учетные записи</h1>
           <el-button
-              type="primary"
-              :icon="Plus"
-              @click="addNewAccount"
-              circle
+           type="primary"
+           :icon="Plus"
+           @click="addNewAccount"
+           circle
           />
         </div>
       </template>

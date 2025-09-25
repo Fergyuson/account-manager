@@ -28,13 +28,13 @@ export function useAccountValidation() {
     }
 
     const clearFieldError = (account: AccountRecord, field: AccountEditableField) => {
-        if (account.errors[field]) {
+    if (account.errors[field]) {
         delete account.errors[field]
         }
     }
 
     const transformLabelToTags = (label: string) => {
-        if (!label.trim()) return []
+    if (!label.trim()) return []
 
         return label
         .split(';')
@@ -44,7 +44,7 @@ export function useAccountValidation() {
     }
 
     const transformTagsToLabel = (tags: { text: string }[]) => {
-        return tags.map(tag => tag.text).join(';')
+    return tags.map(tag => tag.text).join(';')
     }
 
     return {

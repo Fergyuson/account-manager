@@ -1,6 +1,6 @@
 <script setup lang="ts">
 interface Props {
-  modelValue?: string
+  modelValue?: string | null
   recordType: 'Локальная' | 'LDAP'
   error?: boolean
   maxlength?: number
@@ -20,7 +20,7 @@ const emit = defineEmits<Emits>()
 
 const onInput = () => {
   if (props.modelValue && props.modelValue.length <= props.maxlength) {
-    emit('input')
+  emit('input')
   }
 }
 
@@ -32,12 +32,13 @@ const onBlur = () => {
 <template>
   <el-input
       v-if="recordType === 'Локальная'"
-      :model-value="modelValue"
+      :model-value="modelValue || ''"
       @update:model-value="$emit('update:modelValue', $event)"
       type="password"
+      show-password
       placeholder="••••••"
       :maxlength="maxlength"
-      show-word-limit
+      clearable
       :class="{ 'is-error': error }"
       @input="onInput"
       @blur="onBlur"
@@ -49,6 +50,7 @@ const onBlur = () => {
 .ldap-text {
   color: #909399;
   font-style: italic;
+  font-size: 14px;
 }
 
 .is-error {
