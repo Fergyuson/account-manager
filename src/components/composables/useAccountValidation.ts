@@ -1,26 +1,36 @@
-import type { AccountRecord } from '@/types'
+import type { AccountRecord, AccountEditableField } from '@/types'
 
 export function useAccountValidation() {
     const validateAccount = (account: AccountRecord): boolean => {
         let isValid = true
+        const errors: AccountRecord['errors'] = {}
+
+        if (account.label.length > 50) {
+        errors.label = true
+        isValid = false
+        }
 
         if (!account.login || account.login.trim() === '') {
-        account.errors.login = true
+        errors.login = true
         isValid = false
         }
 
         if (account.recordType === 'Локальная') {
             if (!account.password || account.password.trim() === '') {
-            account.errors.password = true
+            errors.password = true
             isValid = false
             }
         }
 
+        account.errors = errors
+
         return isValid
     }
 
-    const clearFieldError = (account: AccountRecord, field: keyof AccountRecord['errors']) => {
-        account.errors[field] = false
+    const clearFieldError = (account: AccountRecord, field: AccountEditableField) => {
+        if (account.errors[field]) {
+        delete account.errors[field]
+        }
     }
 
     const transformLabelToTags = (label: string) => {
