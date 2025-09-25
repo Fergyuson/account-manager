@@ -1,127 +1,193 @@
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { AccountRecord } from '@/types'
+import type {
+    AccountEditableField,
+    AccountRecord,
+    LabelTag,
+    RecordType,
+    SavedAccountData
+} from '@/types'
 
-export const useAccountsStore = defineStore('accounts', {
-    state: () => ({
-        accounts: [] as AccountRecord[]
-    }),
+const STORAGE_KEY = 'vue-accounts'
 
-    actions: {
-        loadFromStorage() {
-            const saved = localStorage.getItem('vue-accounts')
-            if (saved) {
-                try {
-                    this.accounts = JSON.parse(saved)
-                } catch (error) {
-                    console.error('Ошибка при загрузке данных:', error)
-                    this.accounts = []
-                }
-            }
-        },
+const createLabelTags = (label: string): LabelTag[] => {
+    return label
+    .split(';')
+    .map(tag => tag.trim())
+    .filter(Boolean)
+    .map(text => ({ text }))
+}
 
-        saveToStorage() {
-            localStorage.setItem('vue-accounts', JSON.stringify(this.accounts))
-        },
+const createEmptyAccount = (): AccountRecord => ({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    label: '',
+    labelTags: [],
+    recordType: 'Локальная',
+    login: '',
+    password: '',
+    errors: {}
+})
 
-        addAccount() {
-            const newAccount: AccountRecord = {
-                id: Date.now().toString(),
-                label: '',
-                labelTags: [],
-                recordType: 'Локальная',
-                login: '',
-                password: '',
-                errors: {}
-            }
+const mapSavedToAccount = (item: SavedAccountData): AccountRecord => {
+    const labelTags = item.labelTags ?? []
+    const label = labelTags.map(tag => tag.text).join(';')
 
-            this.accounts.push(newAccount)
-            this.saveToStorage()
-        },
+    return {
+    id: item.id,
+    label,
+    labelTags,
+    recordType: item.recordType,
+    login: item.login,
+    password: item.recordType === 'LDAP' ? null : item.password ?? '',
+    errors: {}
+    }
+}
 
-        updateAccountField(id: string, field: keyof AccountRecord, value: any) {
-            const account = this.accounts.find(acc => acc.id === id)
-            if (!account) return
+export const useAccountsStore = defineStore('accounts', () => {
+    const accounts = ref<AccountRecord[]>([])
 
-                ;(account as any)[field] = value
+    const getAccountsForSave = computed<SavedAccountData[]>(() =>
+        accounts.value.map(account => ({
+        id: account.id,
+        labelTags: account.labelTags,
+        recordType: account.recordType,
+        login: account.login,
+        password: account.recordType === 'LDAP' ? null : account.password ?? ''
+        }))
+    )
 
-            if (field === 'label') {
-                account.labelTags = value
-                    ? value.split(';').filter((tag: string) => tag.trim()).map((tag: string) => ({ text: tag.trim() }))
-                    : []
-            }
+    const saveToStorage = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(getAccountsForSave.value))
+    }
 
-            if (field === 'recordType' && value === 'LDAP') {
-                account.password = null
-            }
+    const loadFromStorage = () => {
+    const saved = localStorage.getItem(STORAGE_KEY)
 
-            this.saveToStorage()
-        },
+        if (!saved) {
+        return
+        }
 
-        deleteAccount(id: string) {
-            const index = this.accounts.findIndex(acc => acc.id === id)
-            if (index !== -1) {
-                this.accounts.splice(index, 1)
-                this.saveToStorage()
-            }
-        },
+        try {
+        const parsed = JSON.parse(saved) as SavedAccountData[]
+        accounts.value = parsed.map(mapSavedToAccount)
+        } catch (error) {
+          console.error('Ошибка при загрузке данных из localStorage', error)
+          accounts.value = []
+        }
+    }
 
-        validateAccount(id: string): boolean {
-            const account = this.accounts.find(acc => acc.id === id)
-            if (!account) return false
+    const addAccount = () => {
+    accounts.value.push(createEmptyAccount())
+    saveToStorage()
+    }
 
-            const errors: AccountRecord['errors'] = {}
+    const deleteAccount = (id: string) => {
+        const index = accounts.value.findIndex(account => account.id === id)
 
-            if (!account.login.trim()) {
-                errors.login = true
-            }
+        if (index === -1) {
+        return
+        }
 
-            if (account.recordType === 'Локальная' && !account.password?.trim()) {
-                errors.password = true
-            }
+        accounts.value.splice(index, 1)
+        saveToStorage()
+    }
 
-            if (account.label.length > 50) {
-                errors.label = true
-            }
+    const clearFieldError = (accountId: string, field: AccountEditableField) => {
+        const account = accounts.value.find(item => item.id === accountId)
 
-            if (account.login.length > 100) {
-                errors.login = true
-            }
+        if (!account) {
+        return
+        }
 
-            if (account.password && account.password.length > 100) {
-                errors.password = true
-            }
+        delete account.errors[field]
+    }
 
-            account.errors = errors
-            this.saveToStorage()
+    const updateAccountField = (
+        accountId: string,
+        field: AccountEditableField,
+        value: string | null
+    ) => {
+        const account = accounts.value.find(item => item.id === accountId)
 
-            return Object.keys(errors).length === 0
-        },
+        if (!account) {
+        return
+        }
 
-        clearFieldError(id: string, field: keyof AccountRecord['errors']) {
-            const account = this.accounts.find(acc => acc.id === id)
-            if (account && account.errors) {
-                delete account.errors[field]
+        if (field === 'label') {
+        account.label = (value ?? '').slice(0, 50)
+        account.labelTags = createLabelTags(account.label)
+        } else if (field === 'login') {
+          account.login = (value ?? '').slice(0, 100)
+        } else if (field === 'password') {
+          account.password = value === null ? null : value.slice(0, 100)
+        }
+
+        clearFieldError(accountId, field)
+        saveToStorage()
+    }
+
+    const updateRecordType = (accountId: string, recordType: RecordType) => {
+        const account = accounts.value.find(item => item.id === accountId)
+
+        if (!account) {
+        return
+        }
+
+        account.recordType = recordType
+
+        if (recordType === 'LDAP') {
+        account.password = null
+        delete account.errors.password
+        } else if (account.password === null) {
+          account.password = ''
+        }
+
+        saveToStorage()
+    }
+
+    const validateAccount = (accountId: string) => {
+        const account = accounts.value.find(item => item.id === accountId)
+
+        if (!account) {
+        return false
+        }
+
+        const errors: AccountRecord['errors'] = {}
+
+        if (account.label.length > 50) {
+        errors.label = true
+        }
+
+        if (!account.login.trim()) {
+        errors.login = true
+        }
+
+        if (account.recordType === 'Локальная') {
+            if (!account.password || !account.password.trim()) {
+            errors.password = true
             }
         }
-    },
 
-    getters: {
-        getAccountsForSave: (state) => {
-            return state.accounts.map(account => ({
-                id: account.id,
-                labelTags: account.labelTags,
-                recordType: account.recordType,
-                login: account.login,
-                password: account.recordType === 'LDAP' ? null : account.password
-            }))
-        },
+        account.errors = errors
 
-        validAccountsCount: (state) => {
-            return state.accounts.filter(account =>
-                Object.keys(account.errors).length === 0 &&
-                account.login.trim() &&
-                (account.recordType === 'LDAP' || account.password?.trim())
-            ).length
+        if (Object.keys(errors).length === 0) {
+        saveToStorage()
+        return true
         }
+
+        return false
+    }
+
+    return {
+        accounts,
+        addAccount,
+        deleteAccount,
+        loadFromStorage,
+        updateAccountField,
+        updateRecordType,
+        validateAccount,
+        clearFieldError,
+        getAccountsForSave
+
     }
 })

@@ -4,6 +4,8 @@ export interface LabelTag {
 
 export type RecordType = 'Локальная' | 'LDAP'
 
+export type AccountEditableField = 'label' | 'login' | 'password'
+
 export interface AccountRecord {
     id: string
     label: string
@@ -15,12 +17,11 @@ export interface AccountRecord {
         label?: boolean
         login?: boolean
         password?: boolean
-        recordType?: boolean
     }
 }
 
 export interface AccountFormErrors {
-    [key: string]: boolean
+[key: string]: boolean
 }
 
 export interface ValidationResult {
